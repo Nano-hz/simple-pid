@@ -27,6 +27,7 @@ doc = [
     "sphinx==6.2.1",
     "sphinx-copybutton==0.5.2",
 ]
+examples = ["numpy", "click"]
 
 [build-system]
 requires = ["setuptools"]
