@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-import os
-import sys
+import logging
 import time
-import matplotlib.pyplot as plt
 from simple_pid import PID
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(message)s', datefmt='%H:%M:%S')
+log = logging.getLogger('water_boiler')
 
 
 class WaterBoiler:
@@ -35,9 +36,9 @@ if __name__ == '__main__':
 
     start_time = time.time()
     last_time = start_time
+    last_log_time = start_time
 
-    # Keep track of values for plotting
-    setpoint, y, x = [], [], []
+    log.info("开始烧水，初始温度: %.2f °C", water_temp)
 
     while time.time() - start_time < 10:
         current_time = time.time()
@@ -46,22 +47,20 @@ if __name__ == '__main__':
         power = pid(water_temp)
         water_temp = boiler.update(power, dt)
 
-        x += [current_time - start_time]
-        y += [water_temp]
-        setpoint += [pid.setpoint]
-
         if current_time - start_time > 1:
             pid.setpoint = 100
 
+        # 每隔 0.5 秒打印一次日志，体现控制过程
+        if current_time - last_log_time >= 0.5:
+            log.info(
+                "t=%5.2fs | 目标: %6.2f °C | 当前: %6.2f °C | 功率: %5.1f%%",
+                current_time - start_time,
+                pid.setpoint,
+                water_temp,
+                power,
+            )
+            last_log_time = current_time
+
         last_time = current_time
 
-    plt.plot(x, y, label='measured')
-    plt.plot(x, setpoint, label='target')
-    plt.xlabel('time')
-    plt.ylabel('temperature')
-    plt.legend()
-    if os.getenv('NO_DISPLAY'):
-        # If run in CI the plot is saved to file instead of shown to the user
-        plt.savefig(f"result-py{'.'.join([str(x) for x in sys.version_info[:2]])}.png")
-    else:
-        plt.show()
+    log.info("烧水结束，最终温度: %.2f °C", water_temp)
